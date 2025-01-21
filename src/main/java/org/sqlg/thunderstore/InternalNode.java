@@ -15,7 +15,7 @@ public final class InternalNode extends Node {
 
     @Override
     protected int getMinimumKeysPerNode() {
-        return bPlusTree.getMinimumKeysPerInternalNode();
+        return bPlusTree.getMinimumKeysPerNode();
     }
 
     @Override
@@ -167,6 +167,7 @@ public final class InternalNode extends Node {
                 int removed = keys.remove(indexOfKeyToRemove);
 
                 //move the remaining keys and children into left
+                int keyBeforeMergeSize = left.keys.size();
                 left.keys.addAll(keys);
                 left.children.addAll(children);
                 for (Node child : children) {
@@ -178,10 +179,7 @@ public final class InternalNode extends Node {
 
                 //bring the parent down a level
                 int parentKey = parent.keys.get(indexOfParentKey);
-                assert parentKey > left.keys.getLast() : "parent key must be bigger than left's biggest key";
-                assert parentKey != keyToRemove : "key to remove should not exist in the tree";
-
-                left.keys.add(parentKey);
+                left.keys.add(keyBeforeMergeSize, parentKey);
 
                 if (parent.isRoot() && parent.keys.size() == 1) {
                     bPlusTree.setRoot(left);
@@ -205,9 +203,7 @@ public final class InternalNode extends Node {
                 Node lastChild = left.children.removeLast();
                 lastChild.parent = this;
                 int parentKey = parent.keys.remove(indexOfParentKey);
-                parent.keys.addFirst(lastKey);
-
-                assert parentKey != keyToRemove : "key to remove should not exist in the tree";
+                parent.keys.add(indexOfParentKey, lastKey);
 
                 keys.addFirst(parentKey);
                 children.addFirst(lastChild);
@@ -222,10 +218,13 @@ public final class InternalNode extends Node {
                 //all keys can be merged into the node to the right
 
                 int removed = keys.remove(indexOfKeyToRemove);
+
                 //move the remaining keys and children into right
+                int keyBeforeMergeSize = right.keys.size();
                 right.keys.addAll(keys);
                 right.keys.sort(Integer::compareTo);
-                for (Node child : children) {
+                for (int i = children.size() - 1; i >= 0; i--) {
+                    Node child = children.get(i);
                     right.children.addFirst(child);
                     child.parent = right;
                 }
@@ -235,8 +234,7 @@ public final class InternalNode extends Node {
 
                 //bring the parent down a level
                 int parentKey = parent.keys.get(indexOfParentKey);
-                assert parentKey <= right.keys.getFirst() : "parent key must be smaller or equal to right's smallest key";
-                right.keys.addFirst(parentKey);
+                right.keys.add(keyBeforeMergeSize - 1, parentKey);
 
                 if (parent.isRoot() && parent.keys.size() == 1) {
                     bPlusTree.setRoot(right);
@@ -259,11 +257,11 @@ public final class InternalNode extends Node {
                 Node firstChild = right.children.removeFirst();
                 firstChild.parent = this;
                 int parentKey = parent.keys.remove(indexOfParentKey);
-                parent.keys.addLast(firstKey);
+                parent.keys.add(indexOfParentKey, firstKey);
 
                 assert parentKey != keyToRemove : "key to remove should not exist in the tree";
 
-                keys.addFirst(parentKey);
+                keys.addLast(parentKey);
                 children.addLast(firstChild);
 
                 merged = true;
@@ -273,7 +271,7 @@ public final class InternalNode extends Node {
         assert merged : "failed to merge internal node " + this;
 
         if (parent != null && keys.isEmpty()) {
-            if (parent.keys.size() == parent.minimumKeysPerNode) {
+            if (!parent.isRoot() && parent.keys.size() == parent.minimumKeysPerNode) {
                 parent.merge(keyToRemove, keyToReplace, indexOfParentKey);
             } else {
                 parent.keys.remove(indexOfParentKey);
@@ -382,20 +380,11 @@ public final class InternalNode extends Node {
                 if (internalNode == null) {
                     return null;
                 } else {
-                    return internalNode.findSmallestInternalNodeAtDepth(depth());
+                    //findSmallestInternalNodeAtDepth will always return an InternalNode at least one level higher (closer to root) than the current
+                    assert internalNode.depth() < depth();
+                    return (InternalNode) internalNode.findSmallestInternalNodeAtDepth(depth());
                 }
             }
-        }
-    }
-
-    private InternalNode findSmallestInternalNodeAtDepth(int depth) {
-        Node child = getChildren().getFirst();
-        assert child instanceof InternalNode : "Always expect a InternalNode here. Method should return before LeafNodes are reached.";
-        InternalNode internalNode = (InternalNode) child;
-        if (internalNode.depth() == depth) {
-            return internalNode;
-        } else {
-            return internalNode.findSmallestInternalNodeAtDepth(depth);
         }
     }
 

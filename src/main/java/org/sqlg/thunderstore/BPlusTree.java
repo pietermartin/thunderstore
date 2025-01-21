@@ -13,8 +13,7 @@ public class BPlusTree {
     private final static Logger LOGGER = Logger.getLogger(BPlusTree.class.getName());
     private final int order;
     private final int maximumKeysPerNode; //order - 1
-    private final int minimumKeysPerLeafNode; //|order / 2| - 1
-    private final int minimumKeysPerInternalNode; //|order / 2| - 1
+    private final int minimumKeysPerNode; //|order / 2| - 1
     private final int maximumChildrenPerNode; //order
     private final int minimumChildrenPerNode; //|order / 2|
     private Node root;
@@ -25,8 +24,7 @@ public class BPlusTree {
         }
         this.order = order;
         this.maximumKeysPerNode = order - 1;
-        this.minimumKeysPerLeafNode = Double.valueOf(Math.ceil((double) order / 2) - 1).intValue();
-        this.minimumKeysPerInternalNode = Double.valueOf(Math.ceil((double) order / 2) - 1).intValue();
+        this.minimumKeysPerNode =     Double.valueOf(Math.ceil((double) order / 2) - 1).intValue();
         this.maximumChildrenPerNode = order;
         this.minimumChildrenPerNode = Double.valueOf(Math.ceil((double) order / 2)).intValue();
         this.root = new LeafNode(this);
@@ -77,12 +75,8 @@ public class BPlusTree {
         return maximumKeysPerNode;
     }
 
-    public int getMinimumKeysPerLeafNode() {
-        return minimumKeysPerLeafNode;
-    }
-
-    public int getMinimumKeysPerInternalNode() {
-        return minimumKeysPerInternalNode;
+    public int getMinimumKeysPerNode() {
+        return minimumKeysPerNode;
     }
 
     public int getMaximumChildrenPerNode() {
@@ -116,7 +110,7 @@ public class BPlusTree {
 
     @Override
     public String toString() {
-        return "BPlusTree [order=" + order + ", maximumKeysPerNode=" + maximumKeysPerNode + ", minimumKeysPerInternalNode=" + minimumKeysPerInternalNode + ", minimumKeysPerLeafNode=" + minimumKeysPerLeafNode + ", maximumChildrenPerNode=" + maximumChildrenPerNode + ", minimumChildrenPerNode=" + minimumChildrenPerNode + "]";
+        return "BPlusTree [order=" + order + ", maximumKeysPerNode=" + maximumKeysPerNode + ", minimumKeysPerNode=" + minimumKeysPerNode + ", maximumChildrenPerNode=" + maximumChildrenPerNode + ", minimumChildrenPerNode=" + minimumChildrenPerNode + "]";
     }
 
     public boolean isValid() {
@@ -143,6 +137,9 @@ public class BPlusTree {
                         valid = false;
                     }
                 }
+                if (!valid) {
+                    break;
+                }
                 __previous = parent;
                 parent = parent.parent;
             }
@@ -164,6 +161,45 @@ public class BPlusTree {
             valid = false;
         }
         
+
+        List<Node> nodes = IteratorUtils.toList(nodeIterator(getRoot()));
+        for (Node node : nodes) {
+            if (node.keys.size() > maximumKeysPerNode) {
+                LOGGER.log(Level.SEVERE, "keys {0} exceed maximumKeysPerNode {1}", new Object[]{node.keys.toString(), maximumKeysPerNode});
+                valid = false;
+            }
+            if (!node.isRoot() && node.keys.size() < minimumKeysPerNode) {
+                LOGGER.log(Level.SEVERE, "keys {0} exceed minimumKeysPerNode {1}", new Object[]{node.keys.toString(), minimumKeysPerNode});
+                valid = false;
+            }
+            if (node.getChildren().size() > maximumChildrenPerNode) {
+                LOGGER.log(Level.SEVERE, "children {0} exceed maximumChildrenPerNode {1}", new Object[]{node.getChildren().toString(), maximumChildrenPerNode});
+                valid = false;
+            }
+            if (!node.isRoot() && node instanceof InternalNode && node.getChildren().size() < minimumChildrenPerNode) {
+                LOGGER.log(Level.SEVERE, "children {0} exceed minimumChildrenPerNode {1}", new Object[]{node.getChildren().toString(), minimumChildrenPerNode});
+                valid = false;
+            }
+
+            List<Node> children = node.getChildren();
+            if (!children.isEmpty()) {
+                for (int i = 0; i < node.keys.size(); i++) {
+                    Integer key = node.keys.get(i);
+                    Node child = children.get(i);
+                    if (i == 0 && key < child.keys.getLast()) {
+                        LOGGER.log(Level.SEVERE, "found child key to the left {0} that is >= to the parent key {1}", new Object[]{child.keys.getLast(), key});
+                        valid = false;
+                    }
+                    if (!valid) {
+                        break;
+                    }
+                }
+            }
+            if (!valid) {
+                break;
+            }
+        }
+
         valid = valid && this.root.isValid();
         return valid;
     }
@@ -197,6 +233,14 @@ public class BPlusTree {
             return BPlusIterator.emptyListIterator();
         } else {
             return new LeafNodeIterator(start);
+        }
+    }
+
+    public BPlusIterator<Node> nodeIterator(Node start) {
+        if (root == null) {
+            return BPlusIterator.emptyListIterator();
+        } else {
+            return new NodeIterator(start);
         }
     }
 

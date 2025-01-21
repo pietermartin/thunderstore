@@ -43,13 +43,36 @@ public sealed abstract class Node permits LeafNode, InternalNode {
 
     protected abstract void split(int key);
 
-    protected void walkParentReplaceKeyToRemove(int keyToRemove, int keyToReplace) {
-        if (parent != null) {
-            int indexOf = parent.keys.indexOf(keyToRemove);
-            if (indexOf != -1) {
-                parent.keys.set(indexOf, keyToReplace);
+    protected void walkReplaceKeyToRemove(int keyToRemove, int keyToReplace) {
+        int indexOf = keys.indexOf(keyToRemove);
+        if (indexOf != -1) {
+            keys.set(indexOf, keyToReplace);
+        }
+        for (Node child : getChildren()) {
+            if (child instanceof InternalNode) {
+                child.walkReplaceKeyToRemove(keyToRemove, keyToReplace);
+            } else {
+                break;
             }
-            parent.walkParentReplaceKeyToRemove(keyToRemove, keyToReplace);
+        }
+    }
+
+//    protected void walkParentReplaceKeyToRemove(int keyToRemove, int keyToReplace) {
+//        if (parent != null) {
+//            int indexOf = parent.keys.indexOf(keyToRemove);
+//            if (indexOf != -1) {
+//                parent.keys.set(indexOf, keyToReplace);
+//            }
+//            parent.walkParentReplaceKeyToRemove(keyToRemove, keyToReplace);
+//        }
+//    }
+
+    protected Node findSmallestInternalNodeAtDepth(int depth) {
+        Node child = getChildren().getFirst();
+        if (child.depth() == depth) {
+            return child;
+        } else {
+            return child.findSmallestInternalNodeAtDepth(depth);
         }
     }
 

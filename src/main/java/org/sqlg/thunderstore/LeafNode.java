@@ -10,7 +10,7 @@ public final class LeafNode extends Node {
 
     @Override
     protected int getMinimumKeysPerNode() {
-        return bPlusTree.getMinimumKeysPerLeafNode();
+        return bPlusTree.getMinimumKeysPerNode();
     }
 
     @Override
@@ -51,18 +51,27 @@ public final class LeafNode extends Node {
     protected void delete(int key) {
         //is the root node or has more than minimumKeysPerNode? i.e. it is the trivial operation to just remove the key.
         if (parent == null || keys.size() > minimumKeysPerNode) {
+
+
             int indexOfKeyToRemove = keys.indexOf(key);
+            int keyToReplaceOnParents = nextKey(key);
+
             Integer removed = keys.remove(indexOfKeyToRemove);
             assert removed != null : "failed to remove key " + indexOfKeyToRemove + ", not found";
             assert parent == null || keys.size() >= minimumKeysPerNode;
 
-            //check parent
             if (parent != null) {
-                parent.delete(key);
+                if (keyToReplaceOnParents != -1) {
+                    bPlusTree.getRoot().walkReplaceKeyToRemove(key, keyToReplaceOnParents);
+                }
             }
+
         } else {
             //merge the node to the left or right
+            int indexOfKeyToRemove = keys.indexOf(key);
+            int keyToReplaceOnParents = nextKey(key);
             merge(key);
+            bPlusTree.getRoot().walkReplaceKeyToRemove(key, keyToReplaceOnParents);
         }
     }
 
@@ -76,11 +85,9 @@ public final class LeafNode extends Node {
         boolean leftAllowed = indexOfChild > 0;
         boolean rightAllowed = indexOfChild < parent.children.size() - 1;
         assert leftAllowed || rightAllowed : "there must always be a node to the left or right";
+
         int indexOfKeyToRemove = keys.indexOf(keyToRemove);
         int removed = keys.remove(indexOfKeyToRemove);
-
-        int keyToReplace = parent.keys.get(indexOfParentKey);
-        walkParentReplaceKeyToRemove(keyToRemove, keyToReplace);
 
         boolean merged = false;
         if (leftAllowed) {
@@ -98,7 +105,7 @@ public final class LeafNode extends Node {
                     parent = null;
                 }
             }
-            if (left != null && left.keys.size() > minimumKeysPerNode) {
+            if (!merged && left != null && left.keys.size() > minimumKeysPerNode) {
                 //from left, remove the biggest key, make it the parent and add to keys
                 int last = left.keys.removeLast();
                 parent.keys.set(indexOfParentKey, last);
@@ -123,7 +130,7 @@ public final class LeafNode extends Node {
                     parent = null;
                 }
             }
-            if (right != null && right.keys.size() > minimumKeysPerNode) {
+            if (!merged && right != null && right.keys.size() > minimumKeysPerNode) {
                 //triangle logic
                 //         9
                 //    x,7    9,10
@@ -149,6 +156,22 @@ public final class LeafNode extends Node {
             }
         }
 
+
+    }
+
+    private int nextKey(int currentKey) {
+        int indexOfCurrent = keys.indexOf(currentKey);
+        assert indexOfCurrent != -1 : "currentKey must exist";
+        if (indexOfCurrent != keys.size() - 1) {
+            return keys.get(indexOfCurrent + 1);
+        } else {
+            LeafNode next = nextLeafNode();
+            if (next != null) {
+                return next.keys.getFirst();
+            } else {
+                return -1;
+            }
+        }
     }
 
     @Override
