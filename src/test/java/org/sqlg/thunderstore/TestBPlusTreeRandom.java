@@ -161,17 +161,20 @@ public class TestBPlusTreeRandom extends BaseTest {
                 bPlusTree.insert(key);
             }
             if (i % 1_000_000 == 0) {
-                LOGGER.log(Level.INFO, "completed {0}, depth {1}", new Object[]{Integer.toString(i), Integer.toString(bPlusTree.depth())});
+                LOGGER.log(Level.INFO, "insert {0}, depth {1}", new Object[]{Integer.toString(i), Integer.toString(bPlusTree.depth())});
             }
         }
         assertTreeGeneral(bPlusTree);
-//        for (int i = 0; i < KEYS_TO_ADD; i++) {
-//            int key = rand.nextInt(KEYS_TO_ADD);
-//            LeafNode leafNode = bPlusTree.searchForLeafNode(key);
-//            if (leafNode != null) {
-//                bPlusTree.delete(key);
-//            }
-//        }
-//        assertTreeGeneral(bPlusTree);
+        for (int i = 0; i < KEYS_TO_ADD; i++) {
+            int key = rand.nextInt(KEYS_TO_ADD);
+            LeafNode leafNode = bPlusTree.searchForLeafNode(key);
+            if (leafNode != null) {
+                bPlusTree.delete(key);
+            }
+            if (i % 100_000 == 0) {
+                LOGGER.log(Level.INFO, "delete {0}, depth {1}", new Object[]{Integer.toString(i), Integer.toString(bPlusTree.depth())});
+            }
+        }
+        assertTreeGeneral(bPlusTree);
     }
 }
