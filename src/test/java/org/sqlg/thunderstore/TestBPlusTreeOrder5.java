@@ -88,4 +88,31 @@ public class TestBPlusTreeOrder5 extends BaseTest {
         LOGGER.info(bPlusTree.print().toString());
         assertTreeGeneral(bPlusTree);
     }
+
+    @Test
+    public void failure5() {
+        BPlusTree bPlusTree = new BPlusTree(5);
+        assertTreeGeneral(bPlusTree);
+        bPlusTree.insert(497).insert(432).insert(701).insert(882).insert(746).insert(8)
+                .insert(68).insert(717).insert(581).insert(536).insert(679).insert(965)
+                .insert(830).insert(972).insert(335).insert(230).insert(96).insert(148)
+                .insert(133).insert(275).insert(611).insert(264);
+
+        assertTree(
+                bPlusTree,
+                3,
+                9,
+                List.of(List.of(8, 68), List.of(96, 133), List.of(148, 230), List.of(264, 275, 335), List.of(432, 497), List.of(536, 581, 611, 679), List.of(701, 717), List.of(746, 830), List.of(882, 965, 972)),
+                List.of(List.of(264, 701), List.of(96, 148), List.of(432, 536), List.of(746, 882))
+        );
+        LOGGER.info(bPlusTree.print().toString());
+
+        bPlusTree.delete(497).delete(432).delete(701).delete(882).delete(746).delete(8)
+                .delete(68).delete(717).delete(581).delete(536).delete(679).delete(965)
+                .delete(830).delete(972).delete(335).delete(230).delete(96).delete(148)
+                .delete(133).delete(275).delete(611);
+        bPlusTree.delete(264);
+        LOGGER.info(bPlusTree.print().toString());
+        assertTreeGeneral(bPlusTree);
+    }
 }

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class TestBPlusTreeRandom extends BaseTest {
@@ -87,12 +88,12 @@ public class TestBPlusTreeRandom extends BaseTest {
     public void testBPlusTreeOrder5() {
         for (int j = 0; j < 1000; j++) {
 
-            int KEYS_TO_ADD = 1000;
+            int KEYS_TO_ADD = 10_00;
             BPlusTree bPlusTree = new BPlusTree(5);
             Random rand = new Random();
             List<Integer> inserted = new ArrayList<>();
             for (int i = 0; i < KEYS_TO_ADD; i++) {
-                int key = rand.nextInt(1000);
+                int key = rand.nextInt(KEYS_TO_ADD);
                 LeafNode leafNode = bPlusTree.searchForLeafNode(key);
                 if (leafNode == null) {
                     inserted.add(key);
@@ -113,7 +114,6 @@ public class TestBPlusTreeRandom extends BaseTest {
                         bPlusTree.delete(key);
                     }
                 }
-//            LOGGER.info(bPlusTree.print().toString());
                 assertTreeGeneral(bPlusTree);
             } finally {
 //                LOGGER.log(Level.INFO, "deleted keys: {0}", deleted.stream().map(i -> ".delete(" + i + ")").reduce((a, b) -> a + b).orElse(""));
@@ -122,4 +122,56 @@ public class TestBPlusTreeRandom extends BaseTest {
         }
     }
 
+    @Test
+    public void testBPlusTreeOrderX() {
+        for (int j = 0; j < 10; j++) {
+            int KEYS_TO_ADD = 1_000_000;
+            Random randOrder = new Random();
+            BPlusTree bPlusTree = new BPlusTree(randOrder.nextInt(3, 10_000));
+            Random rand = new Random();
+            for (int i = 0; i < KEYS_TO_ADD; i++) {
+                int key = rand.nextInt(KEYS_TO_ADD);
+                LeafNode leafNode = bPlusTree.searchForLeafNode(key);
+                if (leafNode == null) {
+                    bPlusTree.insert(key);
+                }
+            }
+            assertTreeGeneral(bPlusTree);
+            for (int i = 0; i < KEYS_TO_ADD; i++) {
+                int key = rand.nextInt(KEYS_TO_ADD);
+                LeafNode leafNode = bPlusTree.searchForLeafNode(key);
+                if (leafNode != null) {
+                    bPlusTree.delete(key);
+                }
+            }
+            assertTreeGeneral(bPlusTree);
+            LOGGER.log(Level.INFO, "completed {0}", Integer.toString(j));
+        }
+    }
+
+    @Test
+    public void testBPlusTreeOrderLarge() {
+        BPlusTree bPlusTree = new BPlusTree(100);
+        int KEYS_TO_ADD = 10_000_000;
+        Random rand = new Random();
+        for (int i = 0; i < KEYS_TO_ADD; i++) {
+            int key = rand.nextInt(KEYS_TO_ADD);
+            LeafNode leafNode = bPlusTree.searchForLeafNode(key);
+            if (leafNode == null) {
+                bPlusTree.insert(key);
+            }
+            if (i % 1_000_000 == 0) {
+                LOGGER.log(Level.INFO, "completed {0}, depth {1}", new Object[]{Integer.toString(i), Integer.toString(bPlusTree.depth())});
+            }
+        }
+        assertTreeGeneral(bPlusTree);
+//        for (int i = 0; i < KEYS_TO_ADD; i++) {
+//            int key = rand.nextInt(KEYS_TO_ADD);
+//            LeafNode leafNode = bPlusTree.searchForLeafNode(key);
+//            if (leafNode != null) {
+//                bPlusTree.delete(key);
+//            }
+//        }
+//        assertTreeGeneral(bPlusTree);
+    }
 }
