@@ -24,7 +24,7 @@ public class BPlusTree {
         }
         this.order = order;
         this.maximumKeysPerNode = order - 1;
-        this.minimumKeysPerNode =     Double.valueOf(Math.ceil((double) order / 2) - 1).intValue();
+        this.minimumKeysPerNode = Double.valueOf(Math.ceil((double) order / 2) - 1).intValue();
         this.maximumChildrenPerNode = order;
         this.minimumChildrenPerNode = Double.valueOf(Math.ceil((double) order / 2)).intValue();
         this.root = new LeafNode(this);
@@ -117,31 +117,33 @@ public class BPlusTree {
         List<LeafNode> leafNodes = IteratorUtils.toList(leafNodeIterator());
         //assert all parents to the left are smaller or equal to leaf node
         boolean valid = true;
-        Node __previous;
-        for (LeafNode leafNode : leafNodes) {
-            __previous = leafNode;
-            InternalNode parent = leafNode.parent;
-            Integer first = leafNode.keys.getFirst();
-            while (parent != null) {
-                int indexOfLeaf = parent.children.indexOf(__previous);
-                int _indexOfLeaf = indexOfLeaf == 0 || indexOfLeaf == 1 ? 0 : indexOfLeaf - 1;
-                int parentKey = parent.keys.get(_indexOfLeaf);
-                if (indexOfLeaf == 0) {
-                    if (first >= parentKey) {
-                        LOGGER.log(Level.SEVERE, "leafNode {0} must be < to parent keys, instead found {1}", new Object[]{first, parentKey});
-                        valid = false;
+        if (!(leafNodes.size() == 1 && leafNodes.getFirst() == root)) {
+            Node __previous;
+            for (LeafNode leafNode : leafNodes) {
+                __previous = leafNode;
+                InternalNode parent = leafNode.parent;
+                Integer first = leafNode.keys.getFirst();
+                while (parent != null) {
+                    int indexOfLeaf = parent.children.indexOf(__previous);
+                    int _indexOfLeaf = indexOfLeaf == 0 || indexOfLeaf == 1 ? 0 : indexOfLeaf - 1;
+                    int parentKey = parent.keys.get(_indexOfLeaf);
+                    if (indexOfLeaf == 0) {
+                        if (first >= parentKey) {
+                            LOGGER.log(Level.SEVERE, "leafNode {0} must be < to parent keys, instead found {1}", new Object[]{first, parentKey});
+                            valid = false;
+                        }
+                    } else {
+                        if (first < parentKey) {
+                            LOGGER.log(Level.SEVERE, "leafNode {0} must be >= to parent keys, instead found {1}", new Object[]{first, parentKey});
+                            valid = false;
+                        }
                     }
-                } else {
-                    if (first < parentKey) {
-                        LOGGER.log(Level.SEVERE, "leafNode {0} must be >= to parent keys, instead found {1}", new Object[]{first, parentKey});
-                        valid = false;
+                    if (!valid) {
+                        break;
                     }
+                    __previous = parent;
+                    parent = parent.parent;
                 }
-                if (!valid) {
-                    break;
-                }
-                __previous = parent;
-                parent = parent.parent;
             }
         }
 
@@ -160,7 +162,7 @@ public class BPlusTree {
             LOGGER.log(Level.SEVERE, "found internal nodes that are not leaf nodes, {0}", new Object[]{_internalNodeKeys.toString()});
             valid = false;
         }
-        
+
 
         List<Node> nodes = IteratorUtils.toList(nodeIterator(getRoot()));
         for (Node node : nodes) {
