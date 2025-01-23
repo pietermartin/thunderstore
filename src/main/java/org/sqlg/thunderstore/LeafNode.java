@@ -149,7 +149,7 @@ public final class LeafNode extends Node {
         assert merged : "failed to merge leaf node " + this;
 
         if (parent != null && keys.isEmpty()) {
-            if (parent.keys.size() == parent.minimumKeysPerNode) {
+            if (!parent.isRoot() && parent.keys.size() == parent.minimumKeysPerNode) {
                 parent.merge(keyToRemove, parent.keys.get(indexOfParentKey), indexOfParentKey);
             } else {
                 parent.keys.remove(indexOfParentKey);
